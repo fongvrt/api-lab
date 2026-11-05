@@ -24,7 +24,7 @@
 - Severity: Medium เพราะลูกค้าที่ exclude ครบทุก tool จะไม่ได้รับพิซซ่าอยู่แล้ว ระบบจึงไม่ได้เสียหายหรือข้อมูลรั่ว แต่ app ที่เรียก API จะได้ 500 ที่ไม่มีข้อความ ทำให้บอกผู้ใช้ไม่ได้ว่าผิดตรงไหน แยกไม่ออกจาก server ล่มจริง และอาจ retry ซ้ำโดยไม่จำเป็น
 
 ## Part A
-- Step A4, status codes when the other user reads, changes and deletes:
+- Step A4, status codes when the other user reads, changes and deletes: อ่าน (GET) = `404` `{"error":"not found"}`, แก้ (PUT) = `400` `{"error":"rating ID <id> not found"}`, ลบ (DELETE) = `400` `{"error":"rating ID <id> not found"}` ทั้ง 3 ครั้งอยู่ในช่วง 400–499 และเมื่อ owner อ่านกลับมา rating ไม่เปลี่ยน (3 ดาว, `pizza_id` เดิม)
 
 ## Part B
 1.
