@@ -27,11 +27,11 @@
 - Step A4, status codes when the other user reads, changes and deletes: อ่าน (GET) = `404` `{"error":"not found"}`, แก้ (PUT) = `400` `{"error":"rating ID <id> not found"}`, ลบ (DELETE) = `400` `{"error":"rating ID <id> not found"}` ทั้ง 3 ครั้งอยู่ในช่วง 400–499 และเมื่อ owner อ่านกลับมา rating ไม่เปลี่ยน (3 ดาว, `pizza_id` เดิม)
 
 ## Part B
-1.
-2.
-3.
-4.
-5.
-6.
-7.
-8.
+1. test ของเราคุยกับ server จริง จึงเจอ failure 2 แบบที่ unit test ที่ใช้ stub หาไม่เจอ (1) ปัญหาจาก infrastructure เช่น load balancer ที่ส่ง request ไปคนละ server จน login ได้ 401 (Step 0.12) (2) ปัญหาเมื่อส่วนต่าง ๆ ทำงานร่วมกัน เช่น 500 พร้อม body ว่างเมื่อ exclude ครบ 3 tool (Step 0.16) หรือ error message ที่มาจาก JSON decoder ของ Go โดยตรง ส่วนเหตุผลที่ควรเขียน unit test ด้วย คือ unit test เร็ว ให้ผลเหมือนเดิมทุกครั้ง ไม่ขึ้นกับเน็ตหรือ server ที่คนอื่นใช้ร่วมกัน และชี้ได้ตรงว่า function ไหนพัง
+2. ข้อมูลที่สร้างด้วย public token เป็นของทุกคน คนอื่นอาจแก้หรือลบระหว่างที่ test เรารัน ทำให้ test fail แบบสุ่ม และเราเองก็อาจไปทำข้อมูลของคนอื่นพัง การสร้าง user ใหม่ชื่อไม่ซ้ำทุก test ทำให้แต่ละ test มีข้อมูลของตัวเองและเป็นอิสระต่อกัน ใน Project 2 จะใช้หลักเดียวกัน คือให้ fixture สร้างข้อมูลของกลุ่มเราเอง (เช่น ลูกค้า ตะกร้า หรือการจอง) ด้วยชื่อที่มี uuid ลบทิ้งหลัง test จบ และไม่แตะข้อมูลของกลุ่มอื่นเลย
+3. QuickPizza มีหลาย server อยู่หลัง load balancer และแต่ละ server เก็บ user ของตัวเอง session จะเก็บ cookie AWSALB ไว้ request ถัดไปจึงไปถึง server ตัวเดิมที่รู้จัก user ที่เพิ่งสร้าง ใน Step 0.12 ที่ไม่ใช้ session ผล 3 ครั้งคือ passed, failed, failed ใน 2 ครั้งที่ fail สร้าง user ได้ 201 แต่ login ได้ 401 เพราะ request ไปตกที่ server ที่ไม่รู้จัก user นี้ แสดงว่า test แบบนี้เป็น flaky test
+4. block ที่ทำให้เจอ defect คือ "exclude ครบทั้ง 3 tool" (`["Knife", "Pizza cutter", "Scissors"]`) 500 ที่ body ว่างแย่กว่า 400 ที่มีข้อความ เพราะ app ที่เรียก API แยกไม่ออกว่าเป็น input ผิดหรือ server ล่มจริง ไม่มีข้อความไปแสดงให้ผู้ใช้ และอาจ retry ซ้ำโดยเปล่าประโยชน์ ในขณะที่ 400 พร้อมข้อความบอกได้เลยว่าต้องแก้ input ตรงไหน test นี้เก็บไว้เป็น xfail แทนการลบ เพราะ defect ยังคงมองเห็นได้ใน report ทุกครั้งที่รัน โดย suite ส่วนที่เหลือยังผ่านทั้งหมด และ `strict=True` จะทำให้ run fail ทันทีที่ QuickPizza แก้ defect แล้ว เป็นสัญญาณให้เอา mark ออก ถ้าลบ test ทิ้งก็จะเสีย regression check ของจุดนี้ไป
+5. base choice = 1 + Σ(จำนวน block − 1) = 1 + (3 − 1) + (4 − 1) + (2 − 1) + (3 − 1) = 1 + 2 + 3 + 1 + 2 = **9 test** (ตรงกับ 9 test ใน `test_create_rating.py`) ส่วน all combinations = 3 × 4 × 2 × 3 = **72 test**
+6. ผลที่ได้จริงคือ อ่าน = `404`, แก้ = `400`, ลบ = `400` (`{"error":"rating ID <id> not found"}`) code ที่คาดไว้คือ `404 Not Found` ทั้ง 3 ครั้ง (สำหรับอีก user ถือว่า rating นี้ "ไม่มีอยู่" และไม่บอกด้วยว่ามีอยู่จริง) หรือ `403 Forbidden` ถ้าระบบยอมบอกว่ามี rating นี้แต่ไม่ใช่ของเรา ในด้าน security ไม่ใช่ defect เพราะทุกครั้งถูกปฏิเสธและข้อมูลไม่เปลี่ยน แต่ถือเป็น defect เล็กน้อยด้าน API contract เพราะ code ไม่สม่ำเสมอ และ `400 Bad Request` ผิดความหมาย เนื่องจาก request ไม่ได้ผิด format
+7. `curl -H "@madeup.txt" https://quickpizza.grafana.com/api/ratings` (GET อย่างเดียว) ได้ `HTTP/2 200` พร้อม `{"ratings":[...]}` 50 รายการที่เราไม่ได้สร้าง ทั้งที่ token `0000000000000000` เป็นค่าที่แต่งขึ้นเองและไม่ได้มาจากการ login ในขณะที่ `token short` ได้ 401 จึงดูเหมือน server ตรวจแค่ความยาวของ token (16 ตัวอักษร) ไม่ได้ตรวจว่าเป็น token ที่ออกให้จริง นี่เป็น defect ด้าน security ถ้าเป็นระบบจริง คนแปลกหน้าที่ไม่มีบัญชีจะอ่านข้อมูลได้โดยไม่ต้อง login และอาจสร้าง แก้ หรือลบข้อมูลในนามของ user คนอื่นได้ (เราไม่ได้ทดลองส่วนนี้ตามกฎของใบงาน)
+8. สิ่งที่ API test ตรวจได้ดีกว่าคือ status code, error message และ validation ของ input แต่ละ field ได้ตรงและเร็ว รวมถึง request ที่หน้าเว็บไม่ยอมให้ส่ง เช่น stars = 3.5 หรือ token ปลอม ส่วนสิ่งที่ต้องทดสอบผ่านหน้าเว็บเท่านั้นคือสิ่งที่ผู้ใช้เห็นจริงบนหน้าจอ เช่น ข้อความ error แสดงถูกที่หรือไม่ layout เป็นอย่างไร และปุ่มกดใช้งานได้หรือไม่
