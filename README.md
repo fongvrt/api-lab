@@ -1,5 +1,35 @@
 # api-lab
 
+API tests for QuickPizza (https://quickpizza.grafana.com) with pytest and requests, for the ITDS362 API testing lab.
+
+## How to install and run
+
+On macOS and Linux:
+
+```
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pytest -v
+```
+
+In Windows PowerShell:
+
+```
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+pytest -v
+```
+
+The tests need Python 3.10 or newer. A full run sends about 140 requests to the shared QuickPizza site, so run it when you need to, never in a loop. The expected summary is `32 passed, 1 xfailed`. The xfailed test is Defect 1, described in `RESULTS.md`.
+
+To save the output of a full run as an HTML report:
+
+```
+pytest -v --html=report.html --self-contained-html
+```
+
 ## Input domain model for POST /api/ratings
 
 | Characteristic | Blocks | Values in the tests |
